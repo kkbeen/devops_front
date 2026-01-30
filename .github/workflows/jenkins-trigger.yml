@@ -1,0 +1,33 @@
+name: Trigger Jenkins Build
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  trigger-jenkins:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Trigger Jenkins Job
+      env:
+        JENKINS_USER: ${{ secrets.JENKINS_USER }}
+        JENKINS_TOKEN: ${{ secrets.JENKINS_TOKEN }}
+        JENKINS_URL: ${{ secrets.JENKINS_URL }}
+        JENKINS_JOB_NAME: ${{ secrets.JENKINS_JOB_NAME }}
+      run: |
+        JENKINS_URL=$(printf '%s' "$JENKINS_URL" | tr -d '\n\r')
+        JENKINS_JOB_NAME=$(printf '%s' "$JENKINS_JOB_NAME" | tr -d '\n\r')
+        TRIGGER_URL="${JENKINS_URL}/job/${JENKINS_JOB_NAME}/build"
+        echo "Triggering: ${JENKINS_URL}/job/***/build"
+        curl -f -sS -X POST -u "$JENKINS_USER:$JENKINS_TOKEN" "$TRIGGER_URL"
+
+    - name: Wait for Jenkins Build
+      run: |
+        echo "Jenkins build triggered successfully"
+        echo "Check Jenkins dashboard: ${{ secrets.JENKINS_URL }}"
